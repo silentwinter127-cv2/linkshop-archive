@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}未找到 · 联商影像档案{% endblock %}
+
+{% block content %}
+<div class="not-found">
+  <span class="empty-stamp">404</span>
+  <h1>这页档案不在了</h1>
+  <p>可能已被移除，或者链接里的相册编号有误。</p>
+  <div class="hero-actions">
+    <a class="btn btn-ink" href="{{ url_for('index') }}">回到档案库</a>
+    <a class="btn btn-ghost" href="{{ url_for('search') }}">检索图像</a>
+  </div>
+</div>
+{% endblock %}

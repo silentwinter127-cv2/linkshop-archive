@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>{% block title %}联商影像档案{% endblock %}</title>
+  <meta name="description" content="联商网全站图片存档：论坛帖与文章配图，按内容哈希去重，记录页面标题、原帖时间与存档时间。">
+  <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=4">
+</head>
+<body class="{% block body_class %}{% endblock %}">
+  <a class="skip-link" href="#main">跳到主要内容</a>
+  <div class="paper-grain" aria-hidden="true"></div>
+
+  <header class="site-header">
+    <div class="wrap header-inner">
+      <a class="brand" href="{{ url_for('index') }}" aria-label="联商影像档案首页">
+        <span class="brand-seal">档</span>
+        <span class="brand-text">
+          <strong>联商影像档案</strong>
+          <small>LINKSHOP IMAGE ARCHIVE</small>
+        </span>
+      </a>
+
+      <nav class="site-nav" aria-label="主导航">
+        <a href="{{ url_for('index') }}"
+           class="{{ 'is-active' if request.endpoint == 'index' and not request.args.get('kind') }}">档案库</a>
+        <a href="{{ url_for('index', kind='thread') }}"
+           class="{{ 'is-active' if request.endpoint == 'index' and request.args.get('kind') == 'thread' }}">论坛帖</a>
+        <a href="{{ url_for('index', kind='article') }}"
+           class="{{ 'is-active' if request.endpoint == 'index' and request.args.get('kind') == 'article' }}">文章</a>
+        <a href="{{ url_for('runs') }}"
+           class="{{ 'is-active' if request.endpoint == 'runs' }}">抓取记录</a>
+      </nav>
+
+      <form class="header-search" action="{{ url_for('search') }}" method="get" role="search">
+        <svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16">
+          <circle cx="11" cy="11" r="6.5"></circle>
+          <path d="m16 16 4.2 4.2"></path>
+        </svg>
+        <input type="search" name="q" value="{{ request.args.get('q', '') }}"
+               placeholder="搜索标题、栏目、楼层" autocomplete="off" aria-label="搜索档案">
+        <button type="submit">检索</button>
+      </form>
+    </div>
+  </header>
+
+  <main id="main" class="wrap">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-inner">
+      <div class="footer-brand">
+        <span class="seal-mini">档</span>
+        <div>
+          <strong>联商影像档案</strong>
+          <p>把散落在网页里的影像，收进一座可检索的档案库。</p>
+        </div>
+      </div>
+      <div class="footer-meta">
+        <span>内容哈希去重</span>
+        <span>存档时间可追溯</span>
+        <span>SQLite 结构化索引</span>
+      </div>
+      <p class="footer-note">
+        图片版权归原作者及原网站所有，仅供个人检索、存档与研究使用。
+        <a href="http://www.linkshop.com/" target="_blank" rel="noopener">联商网 ↗</a>
+      </p>
+    </div>
+  </footer>
+
+  {% block scripts %}{% endblock %}
+  <script src="{{ url_for('static', filename='app.js') }}?v=4" defer></script>
+</body>
+</html>

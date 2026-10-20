@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}抓取记录 · 联商影像档案{% endblock %}
+
+{% block content %}
+<section class="runs-hero">
+  <div class="kicker">
+    <span class="kicker-line"></span>
+    <span>CRAWL LOG</span>
+    <span class="kicker-index">SQLITE QUEUE</span>
+  </div>
+  <h1>抓取记录</h1>
+  <p class="lede">队列持久化在 <code>archive.db</code> 中。中断、限页或限图后再次运行，会从待抓队列继续。</p>
+</section>
+
+<div class="run-stats">
+  <div><span>已发现 URL</span><strong>{{ queue.pending + queue.in_progress + queue.done + queue.failed + queue.skipped }}</strong></div>
+  <div><span>待抓</span><strong>{{ queue.pending }}</strong></div>
+  <div><span>完成</span><strong>{{ queue.done }}</strong></div>
+  <div><span>失败</span><strong class="accent">{{ queue.failed }}</strong></div>
+  <div><span>跳过</span><strong>{{ queue.skipped }}</strong></div>
+</div>
+
+<section class="runs-block">
+  <div class="section-head compact">
+    <div>
+      <span class="eyebrow">SESSIONS / {{ runs|length }}</span>
+      <h2>最近抓取</h2>
+    </div>
+    <p class="section-note">默认请求间隔 2 秒，遵守 robots.txt。</p>
+  </div>
+
+  {% if runs %}
+    <div class="table-wrap">
+      <table class="run-table">
+        <thead>
+          <tr>
+            <th>开始</th>
+            <th>范围</th>
+            <th>状态</th>
+            <th>页面</th>
+            <th>相册</th>
+            <th>新图 / 重复</th>
+            <th>错误</th>
+            <th>说明</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for run in runs %}
+            <tr>
+              <td class="mono">{{ run.started_at|dt }}</td>
+              <td><span class="scope-tag">{{ run.scope }}</span></td>
+              <td><span class="status status-{{ run.status }}">{{ run.status }}</span></td>
+              <td>{{ run.pages_fetched }}</td>
+              <td>{{ run.albums_found }}</td>
+              <td>{{ run.images_new }} / {{ run.images_duplicate }}</td>
+              <td>{{ run.errors }}</td>
+              <td class="run-message">{{ run.message or "—" }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="empty compact">
+      <div class="empty-stamp">未</div>
+      <h2>还没有抓取记录</h2>
+      <p>运行一次爬虫后，这里会显示每次会话的页面数、图片数与失败数。</p>
+      <pre><code>python crawler.py --scope site --max-pages 500</code></pre>
+    </div>
+  {% endif %}
+</section>
+
+<section class="run-help">
+  <div>
+    <span class="eyebrow">RESUME</span>
+    <h3>断点续爬</h3>
+    <p>直接再次运行同一条命令即可。已完成的 URL 不会重复抓取，已存在的图片按 SHA-256 复用文件。</p>
+  </div>
+  <div>
+    <span class="eyebrow">RETRY</span>
+    <h3>重试失败</h3>
+    <p>网络恢复后加 <code>--retry-failed</code>，失败页面会重新进入队列。</p>
+  </div>
+  <div>
+    <span class="eyebrow">SCOPE</span>
+    <h3>限定范围</h3>
+    <p><code>--scope forum</code> 只收论坛，<code>--scope news</code> 只收资讯/专栏/数据等栏目。</p>
+  </div>
+</section>
+{% endblock %}

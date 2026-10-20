@@ -1,0 +1,33 @@
+{% macro album_card(album, index) %}
+<a class="album-card" href="{{ url_for('album_detail', album_id=album.id) }}">
+  <div class="album-cover">
+    {% if album.cover_thumb %}
+      <img src="{{ url_for('media', rel_path=album.cover_thumb) }}"
+           alt="{{ album.title }} 封面" loading="lazy">
+    {% else %}
+      <div class="cover-fallback"><span>{{ album.title[:1] }}</span></div>
+    {% endif %}
+    <span class="album-no">{{ "%03d"|format(index) }}</span>
+    <span class="album-kind" title="{{ '论坛帖' if album.kind == 'thread' else '文章' }}">
+      {{ "帖" if album.kind == "thread" else "文" }}
+    </span>
+    <span class="album-count">{{ album.image_count }} 图</span>
+  </div>
+  <div class="album-info">
+    <div class="album-kicker">
+      <span>{{ album.source_year or "未编年" }}</span>
+      <span class="dot">·</span>
+      <span>{{ album.section or "未分类" }}</span>
+    </div>
+    <h3>{{ album.title }}</h3>
+    <div class="album-foot">
+      <span>{{ album.author or "佚名" }}</span>
+      <span>{{ album.source_count }} 处来源</span>
+      {% if album.source_count > album.image_count %}
+        <span class="dedup">去重 {{ album.source_count - album.image_count }}</span>
+      {% endif %}
+      <span class="album-date">{{ album.last_archived_at|date }}</span>
+    </div>
+  </div>
+</a>
+{% endmacro %}

@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+{% block title %}{{ album.title }} · 联商影像档案{% endblock %}
+{% block body_class %}album-page{% endblock %}
+
+{% block content %}
+<div class="crumbs">
+  <a href="{{ url_for('index') }}">档案库</a>
+  <span>/</span>
+  <a href="{{ url_for('index', year=album.source_year) }}">{{ album.source_year or "未编年" }}</a>
+  <span>/</span>
+  <a href="{{ url_for('index', section=album.section) }}">{{ album.section or "未分类" }}</a>
+</div>
+
+<section class="album-hero">
+  <div class="album-heading">
+    <div class="kicker">
+      <span class="kicker-line"></span>
+      <span>{{ "论坛帖" if album.kind == "thread" else "文章" }}</span>
+      <span class="kicker-index">ALBUM {{ "%03d"|format(album.id) }}</span>
+    </div>
+    <h1>{{ album.title }}</h1>
+    <p class="album-meta">
+      <span>{{ album.section or "未分类" }}</span>
+      <span class="dot">·</span>
+      <span>{{ album.author or "佚名" }}</span>
+      <span class="dot">·</span>
+      <span>原页时间 {{ album.posted_at|dt }}</span>
+      {% if album.kind == "thread" and album.reply_count %}
+        <span class="dot">·</span>
+        <span>{{ album.reply_count }} 条回复</span>
+      {% endif %}
+    </p>
+    <p class="album-note">每张图片都标注了所在页面的标题；灯箱中可查看存档时间、原帖时间与内容指纹。</p>
+  </div>
+  <div class="album-actions">
+    <a class="btn btn-ghost" href="{{ album.url }}" target="_blank" rel="noopener">查看原页 <span>↗</span></a>
+    <a class="btn btn-ink" href="{{ url_for('download_album', album_id=album.id) }}">下载相册 ZIP</a>
+  </div>
+</section>
+
+<div class="album-stats">
+  <div>
+    <span>图像</span>
+    <strong>{{ album.image_count }}</strong>
+  </div>
+  <div>
+    <span>来源</span>
+    <strong>{{ album.source_count }}</strong>
+  </div>
+  <div>
+    <span>去重</span>
+    <strong class="accent">{{ album.source_count - album.image_count }}</strong>
+  </div>
+  <div>
+    <span>体积</span>
+    <strong>{{ album.bytes|filesize }}</strong>
+  </div>
+  <div class="album-stats-wide">
+    <span>最后存档</span>
+    <strong>{{ album.last_archived_at|dt }}</strong>
+  </div>
+</div>
+
+<div class="gallery-head">
+  <div>
+    <span class="eyebrow">PLATES / {{ "%02d"|format(total) }}</span>
+    <h2>图版</h2>
+  </div>
+  <p class="gallery-count">
+    第 {{ page }} / {{ pages }} 页
+    <span class="dot">·</span>
+    {{ total }} 张
+  </p>
+</div>
+
+<div class="gallery" id="gallery">
+  {% for image in images %}
+    {% set src_title = image.source_title or image.page_title %}
+    {% set posted = image.post_posted_at or image.source_posted_at or image.posted_at %}
+    <figure class="shot" id="image-{{ image.id }}"
+            data-index="{{ offset + loop.index0 }}"
+            data-full="{{ url_for('media', rel_path=image.rel_path) }}"
+            data-page-title="{{ src_title }}"
+            data-floor="{{ image.floor or '—' }}{% if image.author %} · {{ image.author }}{% endif %}"
+            data-archived="{{ (image.source_archived_at or image.archived_at)|dt }}"
+            data-posted="{{ (posted|dt) if posted else '未记录' }}"
+            data-exif="{{ (image.exif_taken_at|dt) if image.exif_taken_at else '未记录' }}"
+            data-spec="{{ image.width }} × {{ image.height }} px · {{ image.bytes|filesize }}"
+            data-sha="{{ image.sha256[:16] }}…"
+            data-source="{{ image.post_url or album.url }}"
+            data-original="{{ image.source_url }}"
+            data-download="{{ url_for('download_image', image_id=image.id) }}"
+            data-count="{{ image.source_count }}">
+      <button class="shot-button" type="button"
+              aria-label="查看《{{ src_title }}》第 {{ image.floor or '' }} 张大图">
+        <img src="{{ url_for('media', rel_path=image.thumb_path or image.rel_path) }}"
+             alt="{{ src_title }}{% if image.floor %}，{{ image.floor }}{% endif %}"
+             loading="lazy" decoding="async">
+        <span class="shot-no">{{ "%03d"|format(offset + loop.index) }}</span>
+        {% if image.source_count > 1 %}
+          <span class="dup-badge" title="相同内容在档案库中共有 {{ image.source_count }} 处来源">去重 ×{{ image.source_count }}</span>
+        {% endif %}
+        <span class="shot-view">查看大图 <span>↗</span></span>
+      </button>
+      <figcaption>
+        <span class="page-chip" title="页面标题">《{{ src_title }}》</span>
+        <span class="shot-meta">{{ image.floor or "—" }}{% if image.author %} · {{ image.author }}{% endif %}</span>
+        <span class="shot-spec">{{ image.width }}×{{ image.height }} · {{ image.bytes|filesize }}</span>
+        <span class="shot-date">存档 {{ (image.source_archived_at or image.archived_at)|dt }}</span>
+      </figcaption>
+    </figure>
+  {% endfor %}
+</div>
+
+{% if pages > 1 %}
+  <nav class="pager" aria-label="相册分页">
+    {% if page > 1 %}
+      <a class="pager-step" href="?page={{ page - 1 }}">← 上一页</a>
+    {% else %}
+      <span class="pager-step is-disabled">← 上一页</span>
+    {% endif %}
+
+    {% if page_numbers[0] > 1 %}
+      <a class="pager-num" href="?page=1">1</a>
+      {% if page_numbers[0] > 2 %}<span class="pager-gap">…</span>{% endif %}
+    {% endif %}
+
+    {% for n in page_numbers %}
+      <a class="pager-num {{ 'is-active' if n == page }}" href="?page={{ n }}">{{ n }}</a>
+    {% endfor %}
+
+    {% if page_numbers[-1] < pages %}
+      {% if page_numbers[-1] < pages - 1 %}<span class="pager-gap">…</span>{% endif %}
+      <a class="pager-num" href="?page={{ pages }}">{{ pages }}</a>
+    {% endif %}
+
+    {% if page < pages %}
+      <a class="pager-step" href="?page={{ page + 1 }}">下一页 →</a>
+    {% else %}
+      <span class="pager-step is-disabled">下一页 →</span>
+    {% endif %}
+  </nav>
+{% endif %}
+
+<div class="lightbox" id="lightbox" aria-hidden="true">
+  <div class="lb-backdrop" data-close></div>
+  <div class="lb-shell" role="dialog" aria-modal="true" aria-labelledby="lb-heading">
+    <button class="lb-close" type="button" data-close aria-label="关闭大图">×</button>
+    <div class="lb-stage">
+      <img id="lb-image" alt="">
+      <div class="lb-loader" id="lb-loader">载入大图…</div>
+      <button class="lb-nav lb-prev" type="button" aria-label="上一张">←</button>
+      <button class="lb-nav lb-next" type="button" aria-label="下一张">→</button>
+      <div class="lb-counter"><span id="lb-current">1</span><span class="lb-slash">/</span><span id="lb-total">1</span></div>
+    </div>
+    <aside class="lb-info">
+      <span class="eyebrow">IMAGE RECORD</span>
+      <h2 id="lb-heading">图像记录</h2>
+      <div class="lb-title-block">
+        <span class="lb-label">页面标题</span>
+        <span class="page-chip page-chip-large" id="lb-page-title">—</span>
+      </div>
+      <dl class="lb-fields">
+        <div><dt>位置</dt><dd id="lb-floor">—</dd></div>
+        <div><dt>存档时间</dt><dd id="lb-archived">—</dd></div>
+        <div><dt>原帖时间</dt><dd id="lb-posted">—</dd></div>
+        <div><dt>EXIF 拍摄</dt><dd id="lb-exif">—</dd></div>
+        <div><dt>尺寸 / 大小</dt><dd id="lb-spec">—</dd></div>
+        <div><dt>内容指纹</dt><dd class="mono" id="lb-sha">—</dd></div>
+      </dl>
+      <div class="lb-actions">
+        <a class="btn btn-ink" id="lb-download" href="#">下载原图</a>
+        <a class="btn btn-ghost" id="lb-source" href="#" target="_blank" rel="noopener">查看原帖 <span>↗</span></a>
+      </div>
+      <p class="lb-note">
+        内容相同的图片在库中只存一份。本图共有
+        <strong id="lb-count">1</strong> 处来源，当前展示的是本相册中的记录。
+      </p>
+      <p class="lb-original"><a id="lb-original" href="#" target="_blank" rel="noopener">打开原图地址 ↗</a></p>
+    </aside>
+  </div>
+</div>
+{% endblock %}

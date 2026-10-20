@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+{% from "_macros.html" import album_card %}
+{% block title %}联商影像档案 · 全站相册{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <div class="hero-main">
+    <div class="kicker">
+      <span class="kicker-line"></span>
+      <span>全站影像存档计划</span>
+      <span class="kicker-index">NO. {{ "%03d"|format(stats.albums) }}</span>
+    </div>
+    <h1>把散落的<br><span class="hl">影像</span>，收进<br>一座档案库。</h1>
+    <p class="lede">
+      从论坛 DM、门店图集到资讯配图，按内容哈希去重。
+      每张图片保留它所在的页面标题、原帖时间，以及被存档的那一刻。
+    </p>
+    <div class="hero-actions">
+      <a class="btn btn-ink" href="#albums">浏览 {{ stats.albums }} 个相册</a>
+      <a class="btn btn-ghost" href="{{ url_for('search') }}">全站检索 <span>↗</span></a>
+    </div>
+  </div>
+
+  <aside class="hero-aside">
+    <div class="archive-stamp" aria-hidden="true">
+      <span>影</span><span>像</span><span>存</span><span>档</span>
+    </div>
+    <dl class="hero-stats">
+      <div>
+        <dt>图像</dt>
+        <dd>{{ "{:,}".format(stats.images) }}</dd>
+      </div>
+      <div>
+        <dt>相册</dt>
+        <dd>{{ "{:,}".format(stats.albums) }}</dd>
+      </div>
+      <div>
+        <dt>去重</dt>
+        <dd class="accent">{{ "{:,}".format(stats.duplicates) }}</dd>
+      </div>
+      <div>
+        <dt>体积</dt>
+        <dd>{{ stats.bytes|filesize }}</dd>
+      </div>
+    </dl>
+    <p class="hero-note">
+      {% if stats.archived_to %}
+        最后存档 {{ stats.archived_to|dt }}<br>
+      {% else %}
+        等待第一次抓取<br>
+      {% endif %}
+      索引 {{ stats.pages }} 个页面 / {{ stats.discovered }} 条 URL
+    </p>
+  </aside>
+</section>
+
+<div class="stat-band">
+  <div class="stat-band-item">
+    <span class="stat-label">ARCHIVED IMAGES</span>
+    <strong>{{ "{:,}".format(stats.images) }}</strong>
+    <span class="stat-sub">张图像</span>
+  </div>
+  <div class="stat-band-item">
+    <span class="stat-label">UNIQUE CONTENT</span>
+    <strong>{{ "{:,}".format(stats.used_images) }}</strong>
+    <span class="stat-sub">份独立内容</span>
+  </div>
+  <div class="stat-band-item">
+    <span class="stat-label">DUPLICATES MERGED</span>
+    <strong>{{ "{:,}".format(stats.duplicates) }}</strong>
+    <span class="stat-sub">处重复合并</span>
+  </div>
+  <div class="stat-band-item">
+    <span class="stat-label">SOURCE PAGES</span>
+    <strong>{{ "{:,}".format(stats.pages) }}</strong>
+    <span class="stat-sub">个来源页面</span>
+  </div>
+  <div class="stat-band-item">
+    <span class="stat-label">ARCHIVE WINDOW</span>
+    <strong>{{ stats.archived_from|date if stats.archived_from else "—" }}</strong>
+    <span class="stat-sub">起存档</span>
+  </div>
+</div>
+
+<section id="albums" class="album-section">
+  <div class="section-head">
+    <div>
+      <span class="eyebrow">COLLECTIONS / {{ "%02d"|format(albums|length) }}</span>
+      <h2>档案相册</h2>
+    </div>
+    <p class="section-note">默认按原帖 / 文章时间从老到新。每册对应一个帖子或一篇文章。</p>
+  </div>
+
+  <div class="filter-rows">
+    <div class="filter-row">
+      <span class="filter-label">编年</span>
+      <a class="chip {{ 'is-active' if not active_year }}"
+         href="/{% if active_section %}?section={{ active_section|urlencode }}{% if active_kind %}&kind={{ active_kind }}{% endif %}{% elif active_kind %}?kind={{ active_kind }}{% endif %}">全部</a>
+      {% for y in years %}
+        <a class="chip {{ 'is-active' if active_year == y.year }}"
+           href="/?year={{ y.year }}{% if active_section %}&section={{ active_section|urlencode }}{% endif %}{% if active_kind %}&kind={{ active_kind }}{% endif %}">
+          {{ y.year }}<sup>{{ y.albums }}</sup>
+        </a>
+      {% endfor %}
+    </div>
+
+    <div class="filter-row">
+      <span class="filter-label">栏目</span>
+      <a class="chip {{ 'is-active' if not active_section }}"
+         href="/{% if active_year %}?year={{ active_year }}{% if active_kind %}&kind={{ active_kind }}{% endif %}{% elif active_kind %}?kind={{ active_kind }}{% endif %}">全部</a>
+      {% for s in sections[:9] %}
+        <a class="chip {{ 'is-active' if active_section == s.section }}"
+           href="/?section={{ s.section|urlencode }}{% if active_year %}&year={{ active_year }}{% endif %}{% if active_kind %}&kind={{ active_kind }}{% endif %}">
+          {{ s.section }}<sup>{{ s.images }}</sup>
+        </a>
+      {% endfor %}
+    </div>
+
+    <div class="filter-row filter-row-kind">
+      <span class="filter-label">类型</span>
+      <a class="chip {{ 'is-active' if not active_kind }}"
+         href="/{% if active_year %}?year={{ active_year }}{% if active_section %}&section={{ active_section|urlencode }}{% endif %}{% elif active_section %}?section={{ active_section|urlencode }}{% endif %}">全部</a>
+      <a class="chip {{ 'is-active' if active_kind == 'thread' }}"
+         href="/?kind=thread{% if active_year %}&year={{ active_year }}{% endif %}{% if active_section %}&section={{ active_section|urlencode }}{% endif %}">论坛帖</a>
+      <a class="chip {{ 'is-active' if active_kind == 'article' }}"
+         href="/?kind=article{% if active_year %}&year={{ active_year }}{% endif %}{% if active_section %}&section={{ active_section|urlencode }}{% endif %}">文章</a>
+    </div>
+
+    <div class="filter-row">
+      <span class="filter-label">排序</span>
+      <a class="chip {{ 'is-active' if active_order == 'oldest' }}"
+         href="{{ url_with(order='oldest') }}">从老到新</a>
+      <a class="chip {{ 'is-active' if active_order == 'newest' }}"
+         href="{{ url_with(order='newest') }}">从新到旧</a>
+    </div>
+  </div>
+
+  {% if albums %}
+    <div class="album-grid">
+      {% for album in albums %}
+        {{ album_card(album, loop.index) }}
+      {% endfor %}
+    </div>
+  {% elif stats.images %}
+    <div class="empty compact">
+      <div class="empty-stamp">无</div>
+      <h2>当前筛选下没有相册</h2>
+      <p>换一个年份或栏目，或者回到全部档案。</p>
+      <a class="btn btn-ghost" href="/">清除筛选</a>
+    </div>
+  {% else %}
+    <div class="empty">
+      <div class="empty-stamp">空</div>
+      <h2>档案库还没有影像</h2>
+      <p>先在终端启动全站抓取。爬虫会把队列、去重结果和存档时间写进 SQLite；中断后再次运行即可续爬。</p>
+      <pre><code>python crawler.py --scope site --max-pages 500</code></pre>
+      <p class="empty-note">也可以先归档一个帖子或一篇文章：</p>
+      <pre><code>python crawler.py "http://www.linkshop.com/club/archives/2006/313659_3.shtml"</code></pre>
+      <p class="empty-note">抓取完成后刷新本页。</p>
+    </div>
+  {% endif %}
+</section>
+
+<section class="method">
+  <div class="method-item">
+    <span class="method-no">01</span>
+    <h3>整站发现</h3>
+    <p>从首页、栏目页或任意种子页出发，自动跟踪论坛分页与文章链接，队列保存在 SQLite，可中断续爬。</p>
+  </div>
+  <div class="method-item">
+    <span class="method-no">02</span>
+    <h3>内容去重</h3>
+    <p>以 SHA-256 校验图片内容，相同图片只落盘一份；不同页面重复出现时，保留全部来源与楼层信息。</p>
+  </div>
+  <div class="method-item">
+    <span class="method-no">03</span>
+    <h3>时间可追溯</h3>
+    <p>每张图记录入库存档时间、原帖或文章发布时间；若图片带 EXIF 拍摄时间，也一并写入索引。</p>
+  </div>
+</section>
+
+<section class="closing">
+  <span class="closing-rule"></span>
+  <p>图片会旧，页面会消失；至少让它们在被遗忘之前，有一个可被再次找到的坐标。</p>
+  <span class="closing-mark">LINKSHOP · IMAGE ARCHIVE</span>
+</section>
+{% endblock %}

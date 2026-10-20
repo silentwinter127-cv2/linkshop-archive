@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% from "_macros.html" import album_card %}
+{% block title %}{% if query %}{{ query }} · 检索{% else %}检索档案{% endif %} · 联商影像档案{% endblock %}
+
+{% block content %}
+<section class="search-hero">
+  <div class="kicker">
+    <span class="kicker-line"></span>
+    <span>INDEX SEARCH</span>
+    <span class="kicker-index">{{ "{:,}".format(stats.images) }} IMAGES</span>
+  </div>
+  <h1>检索档案</h1>
+  <p class="lede">按页面标题、栏目、作者、楼层或帖子标题查找图像。内容相同的图片已合并，只展示一份。</p>
+  <form class="search-form-large" action="{{ url_for('search') }}" method="get" role="search">
+    <input type="search" name="q" value="{{ query }}" placeholder="例如：麦得龙、DM、商业设计、风兮"
+           autocomplete="off" autofocus aria-label="检索关键词">
+    <button type="submit">检索 <span>↗</span></button>
+  </form>
+</section>
+
+{% if query %}
+  <div class="search-summary">
+    <p>关键词 <mark>{{ query }}</mark></p>
+    <p>{{ images|length }} 张图像 <span class="dot">·</span> {{ albums|length }} 个相册</p>
+  </div>
+
+  {% if albums %}
+    <section class="search-block">
+      <div class="section-head compact">
+        <div>
+          <span class="eyebrow">ALBUMS</span>
+          <h2>匹配的相册</h2>
+        </div>
+      </div>
+      <div class="album-grid">
+        {% for album in albums %}
+          {{ album_card(album, loop.index) }}
+        {% endfor %}
+      </div>
+    </section>
+  {% endif %}
+
+  {% if images %}
+    <section class="search-block">
+      <div class="section-head compact">
+        <div>
+          <span class="eyebrow">IMAGES</span>
+          <h2>匹配的图像</h2>
+        </div>
+        <p class="section-note">点击进入所在相册，并定位到这张图。</p>
+      </div>
+      <div class="search-grid">
+        {% for image in images %}
+          <a class="search-shot" href="{{ url_for('album_image', album_id=image.album_id, image_id=image.id) }}">
+            <div class="search-thumb">
+              <img src="{{ url_for('media', rel_path=image.thumb_path or image.rel_path) }}"
+                   alt="{{ image.source_title or image.page_title }}" loading="lazy">
+              {% if image.source_count > 1 %}
+                <span class="dup-badge">去重 ×{{ image.source_count }}</span>
+              {% endif %}
+            </div>
+            <div class="search-meta">
+              <span class="page-chip">《{{ image.source_title or image.page_title }}》</span>
+              <strong>{{ image.album_title }}</strong>
+              <span>{{ image.floor or "—" }}{% if image.author %} · {{ image.author }}{% endif %}</span>
+              <span class="search-date">存档 {{ image.archived_at|dt }}</span>
+            </div>
+          </a>
+        {% endfor %}
+      </div>
+    </section>
+  {% endif %}
+
+  {% if not albums and not images %}
+    <div class="empty compact">
+      <div class="empty-stamp">无</div>
+      <h2>没有找到匹配的影像</h2>
+      <p>换一个更短的关键词，或直接浏览档案库。</p>
+      <a class="btn btn-ghost" href="{{ url_for('index') }}">回到档案库</a>
+    </div>
+  {% endif %}
+{% else %}
+  <div class="search-tips">
+    <span class="eyebrow">SEARCH BY</span>
+    <div class="tip-row">
+      <span>页面标题</span>
+      <span>栏目 / 版块</span>
+      <span>作者 / 楼层</span>
+      <span>相册标题</span>
+    </div>
+    <p>例：搜索“商业设计”可以找到整个版块的帖子相册；搜索“71楼”可以定位到具体图版。</p>
+  </div>
+{% endif %}
+{% endblock %}
